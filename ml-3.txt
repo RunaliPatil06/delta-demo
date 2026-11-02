@@ -1,0 +1,125 @@
+
+# EXPERIMENT 3: BANK CUSTOMER CHURN PREDICTION
+
+# 1. Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Input
+
+# 2. Load Dataset
+df = pd.read_csv("Churn_Modelling.csv")
+
+print("First Five Rows:")
+print(df.head())
+
+print("\nDataset Information:")
+print(df.info())
+
+print("\nDataset Shape:")
+print(df.shape)
+
+# 3. Data Preprocessing
+df = df.drop(columns=['RowNumber', 'CustomerId', 'Surname'])
+
+# Convert categorical columns into numerical values
+df = pd.get_dummies(
+    df,
+    columns=['Geography', 'Gender'],
+    drop_first=True,
+    dtype=int
+)
+
+# Separate features and target
+X = df.drop('Exited', axis=1)
+y = df['Exited']
+
+# 4. Split Dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 5. Feature Scaling
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 6. Build Artificial Neural Network
+model = Sequential([
+    Input(shape=(X_train.shape[1],)),
+    Dense(16, activation='relu'),
+    Dense(8, activation='relu'),
+    Dense(1, activation='sigmoid')
+])
+
+# 7. Compile Model
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+
+# 8. Train Model
+history = model.fit(
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=32,
+    validation_split=0.2,
+    verbose=1
+)
+
+# 9. Evaluate Model
+loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+
+print("\nTest Accuracy:", accuracy)
+print("Test Loss:", loss)
+
+# 10. Make Predictions
+predictions = model.predict(X_test)
+y_pred = (predictions > 0.5).astype(int)
+
+# 11. Classification Report
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+# 12. Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+
+plt.figure(figsize=(6, 4))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.title("Bank Customer Churn Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+# 13. Plot Training Accuracy
+plt.figure(figsize=(8, 4))
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title("Model Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+# 14. Plot Training Loss
+plt.figure(figsize=(8, 4))
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title("Model Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()

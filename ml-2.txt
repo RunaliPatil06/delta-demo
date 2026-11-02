@@ -1,0 +1,104 @@
+
+# EXPERIMENT 2: EMAIL SPAM DETECTION
+
+# 1. Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# 2. Load Dataset
+df = pd.read_csv("emails.csv")
+
+print("First Five Rows:")
+print(df.head())
+
+print("\nDataset Information:")
+print(df.info())
+
+print("\nDataset Shape:")
+print(df.shape)
+
+# 3. Data Preprocessing
+df = df.dropna()
+
+# Remove email identifier column
+df = df.drop(columns=['Email No.'], errors='ignore')
+
+# Separate features and target
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+
+print("\nTarget Distribution:")
+print(y.value_counts())
+
+# 4. Split Dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 5. Feature Scaling
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 6. KNN Classifier
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+
+knn_predictions = knn.predict(X_test)
+
+print("\nKNN RESULTS")
+print("Accuracy:", accuracy_score(y_test, knn_predictions))
+print(classification_report(y_test, knn_predictions))
+
+# 7. SVM Classifier
+svm = SVC(kernel='linear')
+svm.fit(X_train, y_train)
+
+svm_predictions = svm.predict(X_test)
+
+print("\nSVM RESULTS")
+print("Accuracy:", accuracy_score(y_test, svm_predictions))
+print(classification_report(y_test, svm_predictions))
+
+# 8. Confusion Matrix for KNN
+plt.figure(figsize=(6, 4))
+sns.heatmap(
+    confusion_matrix(y_test, knn_predictions),
+    annot=True,
+    fmt='d',
+    cmap='Blues'
+)
+plt.title("KNN Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+# 9. Confusion Matrix for SVM
+plt.figure(figsize=(6, 4))
+sns.heatmap(
+    confusion_matrix(y_test, svm_predictions),
+    annot=True,
+    fmt='d',
+    cmap='Greens'
+)
+plt.title("SVM Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+# 10. Compare Models
+print("\nMODEL COMPARISON")
+print("KNN Accuracy:", accuracy_score(y_test, knn_predictions))
+print("SVM Accuracy:", accuracy_score(y_test, svm_predictions))

@@ -1,0 +1,139 @@
+
+# EXPERIMENT 4: DIABETES PREDICTION
+
+# 1. Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    classification_report,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve
+)
+
+# 2. Load Dataset
+df = pd.read_csv("diabetes.csv")
+
+print("First Five Rows:")
+print(df.head())
+
+print("\nDataset Information:")
+print(df.info())
+
+print("\nDataset Description:")
+print(df.describe())
+
+# 3. Data Preprocessing
+# Replace invalid zero values with NaN
+columns = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+
+df[columns] = df[columns].replace(0, np.nan)
+
+# Fill missing values using median
+df[columns] = df[columns].fillna(df[columns].median())
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+# 4. Visualize Data
+plt.figure(figsize=(8, 5))
+sns.countplot(x='Outcome', data=df)
+plt.title("Diabetes Outcome Distribution")
+plt.show()
+
+# 5. Correlation Heatmap
+plt.figure(figsize=(10, 6))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title("Correlation Heatmap")
+plt.show()
+
+# 6. Separate Features and Target
+X = df.drop('Outcome', axis=1)
+y = df['Outcome']
+
+# 7. Split Dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 8. Feature Scaling
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 9. KNN Classifier
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+
+knn_predictions = knn.predict(X_test)
+
+print("\nKNN RESULTS")
+print("Accuracy:", accuracy_score(y_test, knn_predictions))
+print("Precision:", precision_score(y_test, knn_predictions))
+print("Recall:", recall_score(y_test, knn_predictions))
+print(classification_report(y_test, knn_predictions))
+
+# 10. Random Forest Classifier
+rf = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+rf.fit(X_train, y_train)
+
+rf_predictions = rf.predict(X_test)
+
+print("\nRANDOM FOREST RESULTS")
+print("Accuracy:", accuracy_score(y_test, rf_predictions))
+print("Precision:", precision_score(y_test, rf_predictions))
+print("Recall:", recall_score(y_test, rf_predictions))
+print(classification_report(y_test, rf_predictions))
+
+# 11. Confusion Matrix
+plt.figure(figsize=(6, 4))
+sns.heatmap(
+    confusion_matrix(y_test, rf_predictions),
+    annot=True,
+    fmt='d',
+    cmap='Blues'
+)
+plt.title("Random Forest Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+# 12. ROC Curve and AUC
+y_probability = rf.predict_proba(X_test)[:, 1]
+
+auc = roc_auc_score(y_test, y_probability)
+fpr, tpr, thresholds = roc_curve(y_test, y_probability)
+
+plt.figure(figsize=(7, 5))
+plt.plot(fpr, tpr, label=f'Random Forest AUC = {auc:.2f}')
+plt.plot([0, 1], [0, 1], linestyle='--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend()
+plt.show()
+
+print("\nROC-AUC Score:", auc)
+
+# 13. Error Rate
+error_rate = 1 - accuracy_score(y_test, rf_predictions)
+print("Error Rate:", error_rate)
